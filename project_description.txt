@@ -1,0 +1,43 @@
+Project Name: NeuSQL-Ai
+
+What this project solves:
+- Ye project aapko messy raw datasets ko clean karne aur unhein structured SQLite database mein stage karne mein madad karta hai.
+- Business users ke liye natural language (English) mein sawal likhne se SQL query banata hai.
+- Data analysis ke liye charts aur summary insights generate karta hai.
+- Ye un logon ke liye useful hai jo data cleaning, simple BI aur SQL queries ko asaan banana chahte hain.
+
+Main features:
+- File upload support: CSV, XLS, XLSX.
+- Automatic data cleaning: whitespace trim, datatype conversion, missing value handling, duplicate removal.
+- Local SQLite staging: cleaned data ko local database mein table ke roop mein save karta hai.
+- NL-to-SQL parser: plain English request ko SQLite-compatible SQL SELECT query mein convert karta hai.
+- Audit history: upload, clean, stage actions ka record rakhta hai.
+- Chart support: Bar, Line, Pie, Scatter chart banane ki capability frontend mein.
+- Optional Gemini API integration: agar GEMINI_API_KEY configured ho, toh advanced AI SQL generation aur insights mil sakte hain.
+
+Kaam kaise karta hai:
+1. User frontend se file upload karta hai.
+2. Backend `utils/cleaner.py` se data load aur clean karta hai.
+3. Clean data ko local SQLite database `database/workspace.db` mein store karta hai.
+4. User natural language mein query deta hai.
+5. `utils/nlp_engine.py` query ko SQL mein convert karta hai (Gemini API available ho toh AI se; warna fallback heuristic se).
+6. SQL query run karke result frontend par dikhata hai.
+7. Result ke saath ek basic insight summary bhi provide karta hai.
+
+Important files:
+- `app.py`: Flask backend, endpoints, file upload, cleaning, staging, session handling.
+- `utils/cleaner.py`: data loading, cleaning logic, SQLite staging.
+- `utils/nlp_engine.py`: NL-to-SQL generation, Gemini integration, fallback SQL logic, insight generation.
+- `templates/index.html`: frontend user interface.
+- `static/css/style.css`: UI styling.
+- `static/js/app.js`: frontend interactions, API calls, chart rendering.
+- `database/`: SQLite database storage folder.
+- `uploads/`: uploaded files temporarily stored.
+
+Setup and use:
+- Python environment banayein aur `pip install -r requirements.txt` chalayein.
+- Agar Gemini AI use karna ho toh root mein `.env` file mein `GEMINI_API_KEY=your_key` likhein.
+- `python app.py` chalayen aur browser mein `http://127.0.0.1:5000` open karein.
+
+Summary:
+NeuSQL-Ai ek local data cleaning aur intelligent query workspace hai. Ye data ko clean karta hai, local SQLite mein store karta hai, aur natural language se SQL queries generate karke business analysis ko aasan banata hai.

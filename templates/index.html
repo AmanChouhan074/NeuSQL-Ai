@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuSQL — AI-Powered Data Cleaning & Intelligent SQL Workspace</title>
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="app-sidebar">
+            <div class="sidebar-brand">
+                <i class="fa-solid fa-wand-magic-sparkles brand-icon"></i>
+                <div class="brand-text">
+                    <h1>NeuSQL</h1>
+                    <span>AI-Powered Data Cleaning & Intelligent SQL Workspace</span>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-section="upload-section">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span>Data Source</span>
+                </a>
+                <a href="#" class="nav-item" data-section="clean-section" id="nav-clean">
+                    <i class="fa-solid fa-broom"></i>
+                    <span>Data Cleaner</span>
+                </a>
+                <a href="#" class="nav-item" data-section="query-section" id="nav-query">
+                    <i class="fa-solid fa-terminal"></i>
+                    <span>AI Query Lab</span>
+                </a>
+                <a href="#" class="nav-item" data-section="schema-section" id="nav-schema">
+                    <i class="fa-solid fa-database"></i>
+                    <span>Schema Inspector</span>
+                </a>
+                <a href="#" class="nav-item" data-section="history-section">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    <span>Audit History</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="api-status-card">
+                    <div class="status-header">
+                        <span class="status-label">Gemini Status:</span>
+                        <div class="status-indicator" id="gemini-status">
+                            <span class="pulse-dot"></span>
+                            <span class="status-text">Checking...</span>
+                        </div>
+                    </div>
+                    <p class="status-desc" id="gemini-desc">Checking Gemini API configuration.</p>
+                </div>
+                <div class="app-version">Version 1.0.0</div>
+            </div>
+        </aside>
+
+        <!-- Main Viewport -->
+        <main class="app-main">
+            <!-- Header -->
+            <header class="main-header">
+                <div class="header-title-area">
+                    <h2 id="section-title">Data Source Management</h2>
+                    <p id="section-subtitle">Upload CSV or Excel files to stage into the SQLite database engine.</p>
+                </div>
+                <div class="header-actions">
+                    <!-- Active table badge hidden per user request -->
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <div class="content-viewport">
+                
+                <!-- Section 1: Upload -->
+                <section id="upload-section" class="viewport-section active">
+                    <div class="grid-card upload-container">
+                        <div class="upload-dropzone" id="dropzone">
+                            <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" style="display: none;">
+                            <div class="dropzone-content">
+                                <div class="dropzone-icon-wrapper">
+                                    <i class="fa-solid fa-file-csv csv-icon"></i>
+                                    <i class="fa-solid fa-file-excel excel-icon"></i>
+                                </div>
+                                <h3>Drag & drop your dataset here</h3>
+                                <p>Supports CSV or Excel files (.xlsx, .xls) up to 20MB</p>
+                                <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                                    <i class="fa-solid fa-folder-open"></i> Browse Files
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="upload-progress-container" class="upload-progress-card" style="display: none;">
+                            <div class="progress-details">
+                                <span id="upload-filename">dataset.csv</span>
+                                <span id="upload-percentage">0%</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill" id="upload-bar"></div>
+                            </div>
+                            <span class="progress-status-text" id="upload-status-text">Reading dataset...</span>
+                        </div>
+
+                        <div id="upload-success-card" class="success-details-card" style="display: none;">
+                            <div class="card-header-icon success">
+                                <i class="fa-solid fa-circle-check"></i>
+                            </div>
+                            <div class="card-details">
+                                <h3>Dataset Loaded Successfully!</h3>
+                                <p>File size: <strong id="success-filesize">N/A</strong> | Total Rows: <strong id="success-rows">0</strong> | Columns: <strong id="success-cols">0</strong></p>
+                                
+                                <div class="table-name-input-group">
+                                    <label for="tableNameInput">Stage SQLite Table Name:</label>
+                                    <div class="input-with-button">
+                                        <input type="text" id="tableNameInput" placeholder="e.g. sales_data">
+                                        <button class="btn btn-accent" id="btn-proceed-to-clean">
+                                            Proceed to Cleaning <i class="fa-solid fa-arrow-right"></i>
+                                        </button>
+                                        <button class="btn btn-danger-outline" id="btn-remove-upload" type="button">
+                                            <i class="fa-solid fa-trash"></i> Remove File
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Column Preview list on Upload -->
+                    <div class="grid-card table-preview-card" id="upload-preview-card" style="display: none;">
+                        <div class="card-header">
+                            <h3>Column Specifications Detected</h3>
+                            <span class="badge" id="preview-col-count">0 Columns</span>
+                        </div>
+                        <div class="preview-table-wrapper">
+                            <table class="data-table" id="preview-meta-table">
+                                <thead>
+                                    <tr>
+                                        <th>Column Name</th>
+                                        <th>Detected Type</th>
+                                        <th>Null Values</th>
+                                        <th>Null %</th>
+                                        <th>Unique Count</th>
+                                        <th>Sample Values</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Dynamic content -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 2: Cleaning Console -->
+                <section id="clean-section" class="viewport-section">
+                    <div class="clean-grid">
+                        <!-- Left Panel: Configurations -->
+                        <div class="grid-card cleaning-options-card">
+                            <div class="card-header">
+                                <h3>Pipeline Configurations</h3>
+                                <p>Configure rules for the data staging cleaning pipeline.</p>
+                            </div>
+                            <div class="clean-options-list">
+                                <div class="option-row">
+                                    <div class="option-info">
+                                        <label class="switch-label">Trim Whitespaces</label>
+                                        <p>Strips trailing and leading whitespaces from cell values.</p>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="clean-trim" checked>
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+
+                                <div class="option-row">
+                                    <div class="option-info">
+                                        <label class="switch-label">Smart Type Conversion</label>
+                                        <p>Detects dates and numerical types, formatting appropriately.</p>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="clean-types" checked>
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+
+                                <div class="option-row">
+                                    <div class="option-info">
+                                        <label class="switch-label">Remove Duplicates</label>
+                                        <p>Deletes rows with exact duplicate values across all fields.</p>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="clean-dedup" checked>
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+
+                                <div class="option-row select-option">
+                                    <div class="option-info">
+                                        <label class="switch-label">Null Value Strategy</label>
+                                        <p>Select action for blank or null records.</p>
+                                    </div>
+                                    <select class="custom-select" id="clean-nulls">
+                                        <option value="placeholder" selected>Placeholder (Unknown / 0)</option>
+                                        <option value="mean">Impute Mean (Numeric only)</option>
+                                        <option value="median">Impute Median (Numeric only)</option>
+                                        <option value="mode">Impute Mode (Categorical & Numeric)</option>
+                                        <option value="drop">Drop Rows with Nulls</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <button class="btn btn-primary btn-block" id="btn-run-cleaning">
+                                    <i class="fa-solid fa-gears"></i> Execute Cleaning & Staging
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: Status / Results -->
+                        <div class="grid-card cleaning-results-card">
+                            <div class="card-header">
+                                <h3>Staging Output Log</h3>
+                            </div>
+                            <div class="clean-results-placeholder" id="clean-placeholder">
+                                <i class="fa-solid fa-broom-wide placeholder-icon"></i>
+                                <p>Select a table, configure options, and trigger execution to stage data.</p>
+                            </div>
+                            
+                            <div class="clean-results-content" id="clean-results-success" style="display: none;">
+                                <div class="clean-status-success">
+                                    <i class="fa-solid fa-circle-check"></i>
+                                    <div>
+                                        <h4>Staging Successful!</h4>
+                                        <p>Table is now queryable inside SQLite</p>
+                                    </div>
+                                </div>
+                                <div class="stats-grid">
+                                    <div class="stat-box">
+                                        <span class="stat-lbl">Table Name</span>
+                                        <span class="stat-val" id="stage-res-table">sales</span>
+                                    </div>
+                                    <div class="stat-box">
+                                        <span class="stat-lbl">Cleaned Rows</span>
+                                        <span class="stat-val" id="stage-res-rows">1,240</span>
+                                    </div>
+                                    <div class="stat-box">
+                                        <span class="stat-lbl">Columns</span>
+                                        <span class="stat-val" id="stage-res-cols">12</span>
+                                    </div>
+                                </div>
+                                <div class="clean-action-panel">
+                                    <button class="btn btn-accent" id="btn-clean-to-query">
+                                        Open AI Query Lab <i class="fa-solid fa-arrow-right"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 3: AI Query Lab -->
+                <section id="query-section" class="viewport-section">
+                    <div class="query-grid">
+                        <!-- Query Input Panel -->
+                        <div class="grid-card query-input-card">
+                            <div class="card-header">
+                                <h3>Natural Language SQL Translator</h3>
+                                <p>Enter questions in plain English to automatically execute query commands.</p>
+                            </div>
+                            
+                            <div class="query-selector-row">
+                                <label for="queryTableSelect">Select Stage Table:</label>
+                                <select class="custom-select" id="queryTableSelect">
+                                    <option value="" disabled selected>No table staged</option>
+                                    <!-- Dynamic options -->
+                                </select>
+                            </div>
+
+                            <div class="query-input-wrapper">
+                                <textarea id="nlQueryInput" placeholder="e.g. Show the average sales and count of orders for each category ordered by sales desc"></textarea>
+                                <div class="query-input-footer">
+                                    <div class="suggestions-tag-list">
+                                        <span>Try:</span>
+                                        <button class="suggestion-tag">Show top 5 rows</button>
+                                        <button class="suggestion-tag">Count total rows</button>
+                                        <button class="suggestion-tag">Average of values grouped by label</button>
+                                    </div>
+                                    <button class="btn btn-accent" id="btn-execute-query">
+                                        <i class="fa-solid fa-play"></i> Run Query
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Results Viewport -->
+                        <div class="grid-card query-results-card" id="query-results-panel" style="display: none;">
+                            <div class="tabs-header">
+                                <button class="tab-btn active" data-tab="tab-table"><i class="fa-solid fa-table-list"></i> Data Grid</button>
+                                <button class="tab-btn" data-tab="tab-chart" id="tab-chart-trigger"><i class="fa-solid fa-chart-column"></i> Analytical Chart</button>
+                                <button class="tab-btn" data-tab="tab-sql"><i class="fa-solid fa-code"></i> Generated SQL</button>
+                                <button class="tab-btn" data-tab="tab-insights" id="tab-insights-trigger"><i class="fa-solid fa-brain"></i> Strategic Insights</button>
+                            </div>
+
+                            <div class="tab-content active" id="tab-table">
+                                <div class="results-meta">
+                                    <span id="results-count-text">0 rows returned</span>
+                                    <button class="btn btn-sm btn-outline" id="btn-export-csv"><i class="fa-solid fa-download"></i> Export CSV</button>
+                                </div>
+                                <div class="results-table-wrapper">
+                                    <table class="data-table" id="query-results-table">
+                                        <thead>
+                                            <tr><!-- Dynamic --></tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Dynamic -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="tab-content" id="tab-chart">
+                                <div class="chart-controls">
+                                    <div class="control-group">
+                                        <label for="chartTypeSelect">Chart Type:</label>
+                                        <select class="custom-select custom-select-sm" id="chartTypeSelect">
+                                            <option value="bar">Bar Chart</option>
+                                            <option value="line">Line Chart</option>
+                                            <option value="pie">Pie Chart</option>
+                                            <option value="scatter">Scatter Plot</option>
+                                        </select>
+                                    </div>
+                                    <div class="control-group">
+                                        <label for="chartXSelect">X-Axis (Labels):</label>
+                                        <select class="custom-select custom-select-sm" id="chartXSelect">
+                                            <!-- Dynamic -->
+                                        </select>
+                                    </div>
+                                    <div class="control-group">
+                                        <label for="chartYSelect">Y-Axis (Values):</label>
+                                        <select class="custom-select custom-select-sm" id="chartYSelect">
+                                            <!-- Dynamic -->
+                                        </select>
+                                    </div>
+                                    <button class="btn btn-sm btn-accent" id="btn-update-chart">Update Chart</button>
+                                </div>
+                                <div class="chart-wrapper">
+                                    <canvas id="analyticsChart"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="tab-content" id="tab-sql">
+                                <div class="sql-code-block">
+                                    <pre><code id="sql-display-code">SELECT * FROM my_table;</code></pre>
+                                </div>
+                                <p class="sql-explanation">This read-only query was generated from your natural language request and safely executed within the SQLite staging database.</p>
+                            </div>
+
+                            <div class="tab-content" id="tab-insights">
+                                <div class="insights-container">
+                                    <div class="insights-header">
+                                        <i class="fa-solid fa-lightbulb insights-icon"></i>
+                                        <div>
+                                            <h4>Strategic Intelligence Summary</h4>
+                                            <p>AI-driven summaries highlighting core patterns in the dataset.</p>
+                                        </div>
+                                    </div>
+                                    <div id="insights-loading" class="insights-loading" style="display: none;">
+                                        <i class="fa-solid fa-spinner fa-spin"></i> Synthesizing business findings...
+                                    </div>
+                                    <ul class="insights-list" id="insights-bullets-list">
+                                        <!-- Dynamic bullets -->
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Empty Results Placeholder -->
+                        <div class="grid-card query-results-placeholder" id="query-results-placeholder">
+                            <i class="fa-solid fa-arrow-up-right-from-square placeholder-icon"></i>
+                            <p>Translate and execute a query to display results here.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 4: Schema Inspector -->
+                <section id="schema-section" class="viewport-section">
+                    <div class="grid-card schema-viewer-card">
+                        <div class="card-header">
+                            <h3>Database Table Schemas</h3>
+                            <button class="btn btn-sm btn-outline" id="btn-refresh-schema"><i class="fa-solid fa-arrows-rotate"></i> Refresh Schema</button>
+                        </div>
+                        
+                        <div class="schema-empty-state" id="schema-empty" style="display: none;">
+                            <i class="fa-solid fa-database placeholder-icon"></i>
+                            <p>No tables staged in database. Clean and stage a dataset to inspect schemas.</p>
+                        </div>
+
+                        <div class="schema-grid" id="schema-grid-container">
+                            <!-- Dynamic Table Schemas -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 5: Audit History -->
+                <section id="history-section" class="viewport-section">
+                    <div class="grid-card history-card">
+                        <div class="card-header">
+                            <h3>Execution History & Audit Log</h3>
+                            <button class="btn btn-sm btn-danger-outline" id="btn-clear-history"><i class="fa-solid fa-trash-can"></i> Clear History</button>
+                        </div>
+                        <div class="history-list-wrapper">
+                            <ul class="history-timeline" id="history-timeline-list">
+                                <!-- Dynamic audit entries -->
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+                
+            </div>
+        </main>
+    </div>
+
+    <!-- Notification Toast -->
+    <div class="toast-notification" id="toast">
+        <i class="fa-solid fa-circle-info toast-icon" id="toast-icon"></i>
+        <span class="toast-message" id="toast-msg">Database loaded.</span>
+    </div>
+
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
